@@ -134,7 +134,7 @@ class RowDAOImpl(store: NameAndSchemaStore, dc: DataCoordinatorClient, qc: Query
       (if (debug) Map("X-Socrata-Debug" -> "true") else Map.empty)
     qc.query(ds.systemId, precondition, ifModifiedSince, query, rowCount,
              copy, secondaryInstance, noRollup, obfuscateId, extraHeaders, queryTimeoutSeconds, resourceScope) {
-      case QueryCoordinatorClient.Success(etags, rollup, response) =>
+      case QueryCoordinatorClient.Success(etags, rollup, lastModified, response) =>
         val jsonColumnReps = if (obfuscateId) JsonColumnRep.forDataCoordinatorType
                              else JsonColumnRep.forDataCoordinatorTypeClearId
         val decodedResult = CJson.decode(response, jsonColumnReps)
@@ -142,7 +142,7 @@ class RowDAOImpl(store: NameAndSchemaStore, dc: DataCoordinatorClient, qc: Query
         val simpleSchema = ExportDAO.CSchema(
           schema.approximateRowCount,
           schema.dataVersion,
-          schema.lastModified.map(time => dateTimeParser.parseDateTime(time)),
+          Option(dateTimeParser.parseDateTime(lastModified)),
           schema.locale,
           schema.pk.map(ds.columnsById(_).fieldName),
           schema.rowCount,
